@@ -1,0 +1,97 @@
+syntax = "proto3";
+option csharp_namespace = "AccountAndTransaction_Service";
+import "google/api/annotations.proto";
+
+package transaction;
+
+service transaction{
+    rpc  VNPayPayment (VNPayRequest) returns (VNPayResponse){
+        option (google.api.http) = {
+            post: "/v1/transactions/vnpay/create",
+            body: "*"
+        };
+    }
+    rpc MomoCreatePayment(MomoCreatePaymentRequest) returns (MomoCreatePaymentResponse){
+        option (google.api.http) = {
+            post: "/v1/transactions/momo/create",
+            body: "*"
+        };
+    }
+    rpc MomoReturnPayment(MomoReturnPaymentRequest) returns (MomoReturnPaymentResponse){
+        option (google.api.http) = {
+            get: "/v1/transactions/momo/paymentcallback"
+        };
+    }
+    rpc IpnMomoPayment(MomoReturnPaymentRequest) returns (MomoReturnPaymentResponse){
+        option (google.api.http) = {
+            get: "/v1/transactions/momo-ipn"
+        };
+    }
+    rpc TransactionHistory(TransactionHistoryRequest) returns (TransactionHistoryResponse){
+        option (google.api.http) = {
+            get: "/v1/transactions/history/{user_id}"
+        };
+    }
+}
+message TransactionHistoryResponse{
+    int32 status_Code = 1;
+    string message = 2;
+    repeated Transactions transactions = 3;
+}
+message TransactionHistoryRequest {
+    string user_id = 1;
+}
+message Transactions {
+    string id = 1;
+    string order_id = 2;
+    string user_id = 3;
+    double amount = 4;
+    string transaction_date = 5;
+    string notice = 6;
+    string extra_data = 7;
+    string signature = 8;
+    int32 status = 9;
+}
+message MomoReturnPaymentResponse{
+    int32 status_Code = 1;
+    string message = 2;
+}
+message MomoReturnPaymentRequest {
+    string partnerCode = 1;
+    string orderId = 2;
+    string requestId = 3;
+    double amount = 4;
+    string orderInfo = 5;
+    string orderType = 6;
+    string transId = 7;
+    int32 resultCode = 8;
+    string message = 9;
+    string payType = 10;
+    string responseTime = 11;
+    string extraData = 12;
+    string signature = 13;
+}
+
+message MomoCreatePaymentRequest{
+    string user_id = 1;
+    string order_id = 2;
+}
+message MomoCreatePaymentResponse{
+    string pay_url = 1;
+    int32 status_code = 2;
+    string message =3; 
+}
+
+message VNPayRequest{
+    string payment_content = 1;
+    string payment_currency = 2;
+    string payment_ref_id = 3;
+    double required_amount = 4;
+    string payment_language = 5;
+    string merchant_id = 6;
+    string payment_destination_id = 7;
+    string signature = 8;
+}
+message VNPayResponse{
+    string pay_url = 1;
+}

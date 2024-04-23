@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+	<RootNamespace>AccountsTransactions_Services</RootNamespace>
+	<Nullable>enable</Nullable>
+	<ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>4c7036c6-0809-46bf-ba3c-f6bbd4fd2c84</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Program.cs~RF156aebfd.TMP" />
+    <None Remove="Services\AuthsService.cs~RFa6e93f.TMP" />
+    <None Remove="Services\OrdersService.cs~RF721e571.TMP" />
+    <None Remove="Services\UsersService.cs~RF209d55cf.TMP" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<Protobuf Include="Protos\user.proto" GrpcServices="Server" />
+		<Protobuf Include="Protos\auth.proto" GrpcServices="Server" />
+		<Protobuf Include="Protos\order.proto" GrpcServices="Server" />
+		<Protobuf Include="Protos\transaction.proto" GrpcServices="Server" />
+	</ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" Version="2.57.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" Version="8.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Grpc.Swagger" Version="0.3.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.6" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AccountsTransactions-BusinessObjects\AccountsTransactions-BusinessObjects.csproj" />
+  </ItemGroup>
+
+</Project>

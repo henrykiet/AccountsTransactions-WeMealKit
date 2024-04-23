@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AccountsTransactions_BusinessObjects</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="ServiceModels\ValidateModels\AuthValidateModel.cs~RF212bf410.TMP" />
+    <None Remove="ServiceModels\ValidateModels\OrderValidateModel.cs~RF70703e9.TMP" />
+    <None Remove="Services\Implement\AuthService.cs~RF7b60f6.TMP" />
+    <None Remove="Services\Implement\OrderService.cs~RF72518f6.TMP" />
+    <None Remove="Services\Implement\TransactionService.cs~RF3a09ba.TMP" />
+    <None Remove="Services\Implement\UserService.cs~RF1f10ce17.TMP" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
+    <PackageReference Include="Hangfire.AspNetCore" Version="1.8.0" />
+    <PackageReference Include="Hangfire.SqlServer" Version="1.8.0" />
+    <PackageReference Include="NETCore.MailKit" Version="2.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AccountsTransactions-DataAccess\AccountsTransactions-DataAccess.csproj" />
+  </ItemGroup>
+
+</Project>

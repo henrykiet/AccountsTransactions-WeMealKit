@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+option csharp_namespace = "AccountAndTransaction_Service";
+import "google/api/annotations.proto";
+
+package auth;
+
+service auth{
+    rpc Register(RegisterRequest) returns (BaseAuthResponse){
+        option (google.api.http) = {
+            post: "/v1/auths/register",
+            body: "*"
+        };
+    }
+    rpc Login(LoginRequest) returns (BaseAuthResponse) {
+        option (google.api.http) = {
+            post: "/v1/auths/login",
+            body: "*"
+        };
+    }
+    rpc ConfirmMail(ConfirmMailRequest) returns (BaseAuthResponse) {
+        option (google.api.http) = {
+            get: "/v1/auths/confirm-mail"
+        };
+    }
+    rpc ResetPassword(ResetPasswordRequest) returns (BaseAuthResponse) {
+        option (google.api.http) = {
+            put: "/v1/auths/resetpassword",
+            body: "*"
+        };
+    }
+    rpc ResetPasswordByEmail(ResetPasswordByEmailRequest) returns (BaseAuthResponse) {
+        option (google.api.http) = {
+            put: "/v1/auths/resetpassword/email",
+            body: "*"
+        };
+    }
+    rpc SendCodeResetPassword(SendCodeResetPasswordRequest) returns (BaseAuthResponse) {
+        option (google.api.http) = {
+            post: "/v1/auths/resetpassword/sendcode",
+            body: "*"
+        };
+    }
+}
+message LoginRequest{
+    string email = 1;
+    string password = 2;    
+}
+message RegisterRequest{
+    string email = 1;
+    string password = 2;
+    string confirm_password = 3;
+    string first_name = 4;
+    string last_name = 5;
+    string dob = 6;
+    int32  gender = 7;
+    string phone = 8;
+}
+message ConfirmMailRequest{
+    string token = 1;
+    string email = 2;
+}
+message SendCodeResetPasswordRequest{
+    string email = 1;
+}
+message ResetPasswordByEmailRequest{
+    string email = 1;
+    string code_reset = 2;    
+    string new_password = 3;    
+    string confirm_password = 4;
+}
+message ResetPasswordRequest{
+    string id = 1;
+    string old_password = 2;    
+    string new_password = 3;    
+    string confirm_password = 4;
+}
+
+
+message BaseAuthResponse{
+    int32 status_code = 1;
+    string message = 2; 
+}

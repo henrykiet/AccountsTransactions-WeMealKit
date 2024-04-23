@@ -1,0 +1,128 @@
+syntax = "proto3";
+
+option csharp_namespace = "AccountAndTransaction_Service";
+import "google/api/annotations.proto";
+
+package order;
+
+service order{
+    rpc AllOrder (AllOrderRequest) returns (AllOrderResponse){
+        option (google.api.http) = {
+            get: "/v1/orders"
+        };
+    }
+    rpc GetOrderById (GetOrderByIdRequest) returns (GetOrderByIdResponse){
+        option (google.api.http) = {
+            get: "/v1/orders/id/{id}"
+        };
+    }
+    rpc CreateOrder (CreateOrderRequest) returns (BaseOrderResponse){
+        option (google.api.http) = {
+            post: "/v1/orders/create",
+            body: "*"
+        };
+    }
+    rpc DeleteOrder (DeleteOrderRequest) returns (BaseOrderResponse){
+        option (google.api.http) = {
+            delete: "/v1/orders/delete/{id}"
+        };
+    }
+    rpc UpdateOrder (UpdateOrderRequest) returns (BaseOrderResponse){
+        option (google.api.http) = {
+            put: "/v1/orders/update",
+            body: "*"
+        };
+    }
+    rpc GetOrderHistory (GetOrderHistoryRequest) returns (GetOrderHistoryResponse){
+        option (google.api.http) = {
+            get: "/v1/orders/history/{user_id}"
+        };
+    }
+    rpc ChangeOrderStatus (ChangOrderStatusRequest) returns (BaseOrderResponse){
+        option (google.api.http) = {
+            put: "/v1/orders/update-status",
+            body: "*"
+        };
+    }
+    rpc ChangeOrderDeliveredStatus (ChangOrderStatusDeliveredRequest) returns (BaseOrderResponse){
+        option (google.api.http) = {
+            put: "/v1/orders/update-delivered",
+            body: "*"
+        };
+    }
+}
+message AllOrderRequest{
+}
+message GetOrderHistoryRequest{
+    string user_id = 1;
+}
+message ChangOrderStatusDeliveredRequest{
+    string id = 1;
+    string user_id = 2;
+    string transaction_id = 3;
+}
+message ChangOrderStatusRequest{
+    string id = 1;
+    int32 status = 2;
+}
+message UpdateOrderRequest{
+    string id = 1;
+    string note = 2;
+    string ship_date = 3;
+    double total_price = 4;
+}
+message GetOrderByIdRequest{
+    string id = 1;
+}
+message DeleteOrderRequest{
+    string id =1;
+}
+
+message CreateOrderRequest{
+    string user_id = 1;
+    string week_plan_id = 2;
+    double total_price = 3;
+    string ship_date = 4;
+    string note = 5;
+}
+
+message GetOrderHistoryResponse{
+    int32 status_code = 1;
+    string message = 2;
+    repeated OrderHistory orders = 3;
+}
+message OrderHistory {
+    string id = 1;
+    string user_id = 2;
+    string weekplan_id = 3;
+    string note = 4;
+    string ship_date = 5;
+    string order_date = 6;
+    double total_price = 7;
+    string status = 8;
+}
+message BaseOrderResponse{
+    int32 status_code = 1;
+    string message = 2;
+}
+message GetOrderByIdResponse{
+    int32 status_code = 1;
+    string message = 2;
+    Order order = 3;
+}
+message AllOrderResponse{
+    int32 status_code = 1;
+    string message = 2;
+    repeated Order order = 3;
+}
+
+message Order {
+    string id = 1;
+    string user_id = 2;
+    string week_plan_Id = 3;
+    string note = 4;
+    string ship_date = 5;
+    string order_date = 6;
+    double total_price = 7;
+    string status = 8;
+}

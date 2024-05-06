@@ -36,8 +36,8 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		private readonly AddRoleUserModelValidator _addRoleValidator;
 		private readonly ChangeRoleUserModelValidator _changeRoleValidator;
 		#endregion
-		public UserService(IUnitOfWork unitOfWork, IMapper mapper,
-			UserManager<User> userManager, RoleManager<IdentityRole> roleManager)
+		public UserService(IUnitOfWork unitOfWork , IMapper mapper ,
+			UserManager<User> userManager , RoleManager<IdentityRole> roleManager)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
@@ -55,10 +55,10 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		{
 			var result = new ResponseObject<AllUserResponseModel>();
 			var users = await _userManager.Users.ToListAsync();
-			if (users != null && users.Count > 0)
+			if ( users != null )
 			{
 				var usersModel = _mapper.Map<List<AllUserResponseModel>>(users);
-				foreach (var u in usersModel)
+				foreach ( var u in usersModel )
 				{
 					u.Role = await GetUserRole(u.ID);
 				}
@@ -69,7 +69,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			}
 			else
 			{
-				result.StatusCode = 500;
+				result.StatusCode = 404;
 				result.Message = "Don't have user!";
 				return result;
 			}
@@ -78,9 +78,9 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		{
 			var result = new ResponseObject<UserModelResponse?>();
 			var user = await _userManager.FindByIdAsync(id);
-			if (user != null)
+			if ( user != null )
 			{
-				if (user.LockoutEnabled == false)
+				if ( user.LockoutEnd != null )
 				{
 					result.StatusCode = 300;
 					result.Message = "User UnActive!";
@@ -95,7 +95,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			}
 			else
 			{
-				result.StatusCode = 400;
+				result.StatusCode = 404;
 				result.Message = "User not found!";
 				return result;
 			}
@@ -106,9 +106,9 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			var usernameExist = await _userManager.FindByNameAsync(email);
 			var emailExist = await _userManager.FindByEmailAsync(email);
 			var userExist = usernameExist ?? emailExist;
-			if (userExist != null)
+			if ( userExist != null )
 			{
-				if (userExist.LockoutEnabled == false)
+				if ( userExist.LockoutEnd != null )
 				{
 					result.StatusCode = 300;
 					result.Message = "User UnActive!";
@@ -123,7 +123,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			}
 			else
 			{
-				result.StatusCode = 400;
+				result.StatusCode = 404;
 				result.Message = "User not found!";
 				return result;
 			}
@@ -136,15 +136,15 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				//read token
 				var handler = new JwtSecurityTokenHandler();
 				var tokenString = handler.ReadToken(token) as JwtSecurityToken;
-				if (tokenString != null)
+				if ( tokenString != null )
 				{
 					//get user id from token
 					var userIdClaim = tokenString.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier);
-					if (userIdClaim != null)
+					if ( userIdClaim != null )
 					{
 						var userId = userIdClaim.Value;
 						var user = await _userManager.FindByIdAsync(userId);
-						if (user == null)
+						if ( user == null )
 						{
 							result.StatusCode = 404;
 							result.Message = "User not found!";
@@ -155,16 +155,16 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 							var rolesClaim = tokenString.Claims.Where(claim => claim.Type == ClaimTypes.Role).Select(claim => claim.Value);
 							var userModel = new UserModelResponse
 							{
-								ID = Guid.Parse(user.Id),
-								Email = user.Email ?? "",
-								UserName = user.UserName ?? "",
-								FirstName = user.FirstName,
-								LastName = user.LastName,
-								DateOfBirth = user.DateOfBirth,
-								PhoneNumber = user.PhoneNumber ?? "",
-								Address = user.Address ?? "",
-								Role = string.Join(", ", rolesClaim),
-								Gender = user.Gender,
+								ID = Guid.Parse(user.Id) ,
+								Email = user.Email ?? "" ,
+								UserName = user.UserName ?? "" ,
+								FirstName = user.FirstName ,
+								LastName = user.LastName ,
+								DateOfBirth = user.DateOfBirth ,
+								PhoneNumber = user.PhoneNumber ?? "" ,
+								Address = user.Address ?? "" ,
+								Role = string.Join(", " , rolesClaim) ,
+								Gender = user.Gender ,
 							};
 							result.StatusCode = 200;
 							result.Message = "User Profile";
@@ -181,12 +181,12 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				}
 				else
 				{
-					result.StatusCode = 401;
+					result.StatusCode = 402;
 					result.Message = "Token invalid!";
 					return result;
 				}
 			}
-			catch (Exception ex)
+			catch ( Exception ex )
 			{
 				result.StatusCode = 500;
 				result.Message = "Error when processing: " + ex.Message;
@@ -196,10 +196,10 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		private async Task<string> GetUserRole(string userId)
 		{
 			var user = await _userManager.FindByIdAsync(userId);
-			if (user != null)
+			if ( user != null )
 			{
 				var roles = await _userManager.GetRolesAsync(user);
-				return string.Join(",", roles);
+				return string.Join("," , roles);
 			}
 			else
 			{
@@ -211,39 +211,39 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			var result = new ResponseObject<BaseUserModelResponse>();
 			//check validate
 			var validationResult = _createValidator.Validate(model);
-			if (!validationResult.IsValid)
+			if ( !validationResult.IsValid )
 			{
 				var error = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
 				result.StatusCode = 400;
-				result.Message = string.Join(" - ", error);
+				result.Message = string.Join(" - " , error);
 				return result;
 			}
 			//check email exist
 			var emailExist = await _userManager.FindByEmailAsync(model.Email);
-			if (emailExist != null)
+			if ( emailExist != null )
 			{
-				result.StatusCode = 400;
+				result.StatusCode = 402;
 				result.Message = "Email have exist!";
 				return result;
 			}
 			//check role exist
 			var roleExist = await _roleManager.RoleExistsAsync(model.Role);
-			if (roleExist == false)
+			if ( roleExist == false )
 			{
-				result.StatusCode = 400;
+				result.StatusCode = 404;
 				result.Message = "Role doesn't exist!";
 				return result;
 			}
 			var newUser = _mapper.Map<User>(model);
 			newUser.UserName = model.Email;
 			var createResult = await _userManager.CreateAsync(newUser);
-			if (createResult.Succeeded)
+			if ( createResult.Succeeded )
 			{
 				//setup password
 				var defaultPassword = "User123@";
-				await _userManager.AddPasswordAsync(newUser, defaultPassword);
+				await _userManager.AddPasswordAsync(newUser , defaultPassword);
 				// Gán vai trò cho người dùng
-				await _userManager.AddToRoleAsync(newUser, model.Role);
+				await _userManager.AddToRoleAsync(newUser , model.Role);
 				result.StatusCode = 200;
 				result.Message = "Created user (" + newUser.Email + ") successfully with password (" + defaultPassword + ").";
 				//result.Data = new CreateUserModelResponse { Id = newUser.Id, UserName = newUser.UserName };
@@ -260,26 +260,26 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		{
 			var result = new ResponseObject<BaseUserModelResponse>();
 			var validationResult = _updateValidator.Validate(model);
-			if (!validationResult.IsValid)
+			if ( !validationResult.IsValid )
 			{
 				var error = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
 				result.StatusCode = 400;
-				result.Message = string.Join(" - ", error);
+				result.Message = string.Join(" - " , error);
 				return result;
 			}
 			//check user exists
 			var userExist = await _userManager.FindByIdAsync(model.Id);
-			if (userExist == null)
+			if ( userExist == null )
 			{
 				result.StatusCode = 400;
 				result.Message = "User not found!";
 				return result;
 			}
-			if (!string.IsNullOrEmpty(model.Email))
+			if ( !string.IsNullOrEmpty(model.Email) )
 			{
 				//check email exist
 				var emailExist = await _userManager.FindByEmailAsync(model.Email);
-				if (emailExist != null)
+				if ( emailExist != null )
 				{
 					result.StatusCode = 400;
 					result.Message = "Email have exist!";
@@ -288,11 +288,11 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				userExist.Email = model.Email;
 				userExist.EmailConfirmed = false;
 			}
-			if (!string.IsNullOrEmpty(model.UserName))
+			if ( !string.IsNullOrEmpty(model.UserName) )
 			{
 				//check username exist
 				var usernameExist = await _userManager.FindByNameAsync(model.UserName);
-				if (usernameExist != null)
+				if ( usernameExist != null )
 				{
 					result.StatusCode = 400;
 					result.Message = "Username have exist!";
@@ -300,23 +300,23 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				}
 				userExist.UserName = model.UserName;
 			}
-			if (!string.IsNullOrEmpty(model.Phone))
+			if ( !string.IsNullOrEmpty(model.Phone) )
 			{
 				userExist.PhoneNumber = model.Phone;
 				userExist.PhoneNumberConfirmed = false;
 			}
-			if (!string.IsNullOrEmpty(model.FirstName))
+			if ( !string.IsNullOrEmpty(model.FirstName) )
 				userExist.FirstName = model.FirstName;
-			if (!string.IsNullOrEmpty(model.LastName))
+			if ( !string.IsNullOrEmpty(model.LastName) )
 				userExist.LastName = model.LastName;
-			if (model.DateOfBirth != null)
+			if ( model.DateOfBirth != null )
 				userExist.DateOfBirth = model.DateOfBirth;
-			if (!string.IsNullOrEmpty(model.Address))
+			if ( !string.IsNullOrEmpty(model.Address) )
 				userExist.Address = model.Address;
-			if (model.Gender != null)
+			if ( model.Gender != null )
 				userExist.Gender = (UserGender)model.Gender;
 			var updateResult = await _userManager.UpdateAsync(userExist);
-			if (updateResult.Succeeded)
+			if ( updateResult.Succeeded )
 			{
 				result.StatusCode = 200;
 				result.Message = "Updated user (" + userExist.UserName + ") successfully.";
@@ -334,28 +334,28 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		{
 			var result = new ResponseObject<BaseUserModelResponse>();
 			var validationResult = _idUserValidator.Validate(model);
-			if (!validationResult.IsValid)
+			if ( !validationResult.IsValid )
 			{
 				var error = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
 				result.StatusCode = 400;
-				result.Message = string.Join(" - ", error);
+				result.Message = string.Join(" - " , error);
 				return result;
 			}
 			//check user exists
 			var userExist = await _userManager.FindByIdAsync(model.Id);
-			if (userExist == null)
+			if ( userExist == null )
 			{
-				result.StatusCode = 400;
+				result.StatusCode = 404;
 				result.Message = "User not found!";
 				return result;
 			}
 			//If user have order trust change status
 			var orderExist = await _unitOfWork.UserRepository.GetOrderExistInUserAsync(userExist.Id);
-			if (orderExist)
+			if ( orderExist )
 			{
 				userExist.LockoutEnd = DateTimeOffset.MaxValue;
 				var updateResult = await _userManager.UpdateAsync(userExist);
-				if (updateResult.Succeeded)
+				if ( updateResult.Succeeded )
 				{
 					result.StatusCode = 200;
 					result.Message = "user (" + userExist.Email + ")have order trust change status (UnActive) successfully.";
@@ -371,7 +371,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			else
 			{
 				var deleteResult = await _userManager.DeleteAsync(userExist);
-				if (deleteResult.Succeeded)
+				if ( deleteResult.Succeeded )
 				{
 					result.StatusCode = 200;
 					result.Message = "User (" + userExist.Email + ") deleted successfully.";
@@ -390,23 +390,23 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		{
 			var result = new ResponseObject<BaseUserModelResponse>();
 			var validationResult = _changeRoleValidator.Validate(model);
-			if (!validationResult.IsValid)
+			if ( !validationResult.IsValid )
 			{
 				var error = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
 				result.StatusCode = 400;
-				result.Message = string.Join(" - ", error);
+				result.Message = string.Join(" - " , error);
 				return result;
 			}
 			var userExist = await _userManager.FindByIdAsync(model.Id);
-			if (userExist != null)
+			if ( userExist != null )
 			{
 				var oldRoles = await _userManager.GetRolesAsync(userExist);
 
-				if (oldRoles.Contains(model.OldRole))
+				if ( oldRoles.Contains(model.OldRole) )
 				{
 					// Remove old roles
-					var removeResult = await _userManager.RemoveFromRoleAsync(userExist, model.OldRole);
-					if (!removeResult.Succeeded)
+					var removeResult = await _userManager.RemoveFromRoleAsync(userExist , model.OldRole);
+					if ( !removeResult.Succeeded )
 					{
 						result.StatusCode = 500;
 						result.Message = "Failed to remove old roles!";
@@ -415,15 +415,15 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				}
 				//check role exist
 				var roleExist = await _roleManager.RoleExistsAsync(model.NewRole);
-				if (roleExist == false)
+				if ( roleExist == false )
 				{
 					result.StatusCode = 400;
 					result.Message = "Role doesn't exist!";
 					return result;
 				}
 				// Add new role
-				var addResult = await _userManager.AddToRoleAsync(userExist, model.NewRole);
-				if (!addResult.Succeeded)
+				var addResult = await _userManager.AddToRoleAsync(userExist , model.NewRole);
+				if ( !addResult.Succeeded )
 				{
 					result.StatusCode = 500;
 					result.Message = "Failed to add new role!";
@@ -431,7 +431,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				}
 
 				result.StatusCode = 200;
-				result.Message = "Changed role for user (" + userExist.UserName + ") from (" + string.Join(",", oldRoles) + ") to (" + model.NewRole + ") successfully.";
+				result.Message = "Changed role for user (" + userExist.UserName + ") from (" + string.Join("," , oldRoles) + ") to (" + model.NewRole + ") successfully.";
 				return result;
 			}
 			else
@@ -445,26 +445,26 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		{
 			var result = new ResponseObject<BaseUserModelResponse>();
 			var validationResult = _addRoleValidator.Validate(model);
-			if (!validationResult.IsValid)
+			if ( !validationResult.IsValid )
 			{
 				var error = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
 				result.StatusCode = 400;
-				result.Message = string.Join(" - ", error);
+				result.Message = string.Join(" - " , error);
 				return result;
 			}
 			var userExist = await _userManager.FindByIdAsync(model.Id);
-			if (userExist != null)
+			if ( userExist != null )
 			{
 				//check role exist
 				var roleExist = await _roleManager.RoleExistsAsync(model.Role);
-				if (roleExist == false)
+				if ( roleExist == false )
 				{
 					result.StatusCode = 400;
 					result.Message = "Role doesn't exist!";
 					return result;
 				}
-				var addResult = await _userManager.AddToRoleAsync(userExist, model.Role);
-				if (!addResult.Succeeded)
+				var addResult = await _userManager.AddToRoleAsync(userExist , model.Role);
+				if ( !addResult.Succeeded )
 				{
 					result.StatusCode = 500;
 					result.Message = "Failed to add new role!";
@@ -486,32 +486,32 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			var result = new ResponseObject<BaseUserModelResponse>();
 			//check validate
 			var validationResult = _idUserValidator.Validate(model);
-			if (!validationResult.IsValid)
+			if ( !validationResult.IsValid )
 			{
 				var error = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
 				result.StatusCode = 400;
-				result.Message = string.Join(" - ", error);
+				result.Message = string.Join(" - " , error);
 				return result;
 			}
 			//check User exist
 			var userExist = await _userManager.FindByIdAsync(model.Id);
-			if (userExist == null)
+			if ( userExist == null )
 			{
 				result.StatusCode = 400;
 				result.Message = "User not found!";
 				return result;
 			}
 			// Set LockAccount
-			if (userExist.LockoutEnd == null)
+			if ( userExist.LockoutEnd == null )
 			{
-				await _userManager.SetLockoutEndDateAsync(userExist, DateTimeOffset.MaxValue);
+				await _userManager.SetLockoutEndDateAsync(userExist , DateTimeOffset.MaxValue);
 				result.StatusCode = 200;
 				result.Message = "Changed User (" + userExist.UserName + ") with status (UnActive) successfully.";
 				return result;
 			}
 			else
 			{
-				await _userManager.SetLockoutEndDateAsync(userExist, null);
+				await _userManager.SetLockoutEndDateAsync(userExist , null);
 				result.StatusCode = 200;
 				result.Message = "Changed User (" + userExist.UserName + ") with status (Active) successfully.";
 				return result;
@@ -522,22 +522,22 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			var result = new ResponseObject<BaseUserModelResponse>();
 			//check validate
 			var validationResult = _idUserValidator.Validate(model);
-			if (!validationResult.IsValid)
+			if ( !validationResult.IsValid )
 			{
 				var error = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
 				result.StatusCode = 400;
-				result.Message = string.Join(" - ", error);
+				result.Message = string.Join(" - " , error);
 				return result;
 			}
 			//check User exist
 			var userExist = await _userManager.FindByIdAsync(model.Id);
-			if (userExist == null)
+			if ( userExist == null )
 			{
 				result.StatusCode = 400;
 				result.Message = "User not found!";
 				return result;
 			}
-			if (userExist.EmailConfirmed == false)
+			if ( userExist.EmailConfirmed == false )
 			{
 				userExist.EmailConfirmed = true;
 				await _userManager.UpdateAsync(userExist);

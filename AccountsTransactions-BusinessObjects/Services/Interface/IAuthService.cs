@@ -1,6 +1,7 @@
 ﻿using AccountsTransactions_BusinessObjects.ResponseObjects;
 using AccountsTransactions_BusinessObjects.ServiceModels.RequestModels;
 using AccountsTransactions_BusinessObjects.ServiceModels.ResponseModels;
+using AccountsTransactions_DataAccess.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,8 +18,5 @@ namespace AccountsTransactions_BusinessObjects.Services.Interface
 		Task<ResponseObject<BaseUserModelResponse>> ResetPasswordAsync(ResetPasswordModelRequest model);
 		Task<ResponseObject<BaseUserModelResponse>> ResetPasswordEmailAsync(ResetPasswordByEmailModelRequest model);
 		Task<ResponseObject<BaseUserModelResponse>> SendCodeResetEmailAsync(SendCodeByEmailModelRequest model);
-
-
-
 	}
 }

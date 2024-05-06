@@ -13,7 +13,6 @@ namespace AccountsTransactions_Services.Services
         {
             _orderService = orderService;
         }
-
 		public override async Task<AllOrderResponse> AllOrder(AllOrderRequest request, ServerCallContext context)
 		{
 			var result = await _orderService.AllOrders();

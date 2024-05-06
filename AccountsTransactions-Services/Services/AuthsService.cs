@@ -16,7 +16,7 @@ namespace AccountsTransactions_Services.Services
             _authService = authService;
 			_sendMailService = sendMailService;
         }
-
+		#region Login
 		public override async Task<BaseAuthResponse> Login(LoginRequest request, ServerCallContext context)
 		{
 			var model = new LoginModel
@@ -66,6 +66,8 @@ namespace AccountsTransactions_Services.Services
 				Message = result.Message
 			};
 		}
+		#endregion
+		#region Register
 		public override async Task<BaseAuthResponse> Register(RegisterRequest request, ServerCallContext context)
 		{
 			var newUser = new RegisterModel
@@ -95,12 +97,20 @@ namespace AccountsTransactions_Services.Services
 				}
 			}
 			var result = await _authService.RegisterEmailAsync(newUser);
+			//register success -> send mail confirm
+			if(result.StatusCode == 200 )
+			{
+				var callbackUrl = $"https://localhost:7135/v1/auths/confirm-mail?token={result.Message}&email={newUser.Email}";
+				_sendMailService.SendMail(newUser.Email , "Confirm Mail" , "Please click to confirm email at WeMealKit: <a href=\"" + callbackUrl + "\">here</a>");
+			}
 			return await Task.FromResult(new BaseAuthResponse
 			{
 				StatusCode = result.StatusCode,
 				Message = result.Message
 			});
 		}
+		#endregion
+		#region Reset password
 		public override async Task<BaseAuthResponse> ResetPassword(ResetPasswordRequest request, ServerCallContext context)
 		{
 			Guid userId;
@@ -167,5 +177,6 @@ namespace AccountsTransactions_Services.Services
 				Message = "Send Failed!"
 			};
 		}
+		#endregion
 	}
 }

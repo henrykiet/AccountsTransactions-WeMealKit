@@ -11,8 +11,8 @@ namespace AccountsTransactions_DataAccess.Enums
 		Processing = 0,
 		Shipping = 1,
 		Shipped = 2,
-		UnShipped = 3,
-		Delivered = 4,
+		Delivered = 3,
+		UnShipped = 4,
 		Canceled = 5
 	}
 	public static class OrderStatusHelper

@@ -50,7 +50,10 @@ namespace AccountsTransactions_DataAccess.Repository.Implement
 
 		public async Task<IEnumerable<Order>?> GetOrderHistoryAsync(string userId)
 		{
-			var result = await _dbSet.Where(t => t.UserId == userId).ToListAsync();
+			var result = await _dbSet
+				.Include(x => x.Transaction)
+				.Include(x => x.User)
+				.Where(t => t.UserId == userId).ToListAsync();
 			if (result != null)
 			{
 				return result;

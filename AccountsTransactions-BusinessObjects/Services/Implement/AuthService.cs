@@ -6,7 +6,6 @@ using AccountsTransactions_BusinessObjects.ServiceModels.ValidateModels;
 using AccountsTransactions_BusinessObjects.Services.Interface;
 using AccountsTransactions_DataAccess.Models;
 using Hangfire;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -37,8 +36,8 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		#endregion
 		public AuthService(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration,
 			SignInManager<User> signInManager)
-        {
-            _userManager = userManager;
+		{
+			_userManager = userManager;
 			_roleManager = roleManager;
 			_configuration = configuration;
 			_signInManager = signInManager;
@@ -48,7 +47,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			_resetPassValidator = new ResetPasswordModelValidator();
 			_sendCodeValidator = new SendCodeByEmailModelValidator();
 			_resetPassByEmailValidator = new ResetPasswordByEmailModelValidator();
-        }
+		}
 		#region Login
 		public async Task<ResponseObject<UserModelResponse>> LoginEmailAsync(LoginModel model)
 		{
@@ -67,7 +66,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			var userExistByUsername = await _userManager.FindByNameAsync(model.Email);
 			if (userExistByEmail == null && userExistByUsername == null)
 			{
-				result.StatusCode = 400;
+				result.StatusCode = 404;
 				result.Message = "User not exist!";
 				return result;
 			}
@@ -137,11 +136,12 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			else
 			{
 				result.StatusCode = 400;
-				result.Message = "User not exist!";
+				result.Message = "Error login!";
 				return result;
 			}
 		}
-		private async Task<string> GenerateToken(User user)
+
+		public async Task<string> GenerateToken(User user)
 		{
 			//create list claim
 			var authClaims = new List<Claim>
@@ -149,27 +149,27 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 					new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
 					new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
 				};
-			if (!string.IsNullOrEmpty(user.Email))
+			if ( !string.IsNullOrEmpty(user.Email) )
 			{
-				authClaims.Add(new Claim(ClaimTypes.Email, user.Email));
+				authClaims.Add(new Claim(ClaimTypes.Email , user.Email));
 			}
 			//Get Roles user
 			var userRoles = await _userManager.GetRolesAsync(user);
 			//add roles into claims
-			authClaims.AddRange(userRoles.Select(role => new Claim(ClaimTypes.Role, role)));
+			authClaims.AddRange(userRoles.Select(role => new Claim(ClaimTypes.Role , role)));
 			//check and add email into list Claim
 			var signingKey = _configuration["JWT:IssuerSigningKey"];
-			if (!string.IsNullOrEmpty(signingKey))
+			if ( !string.IsNullOrEmpty(signingKey) )
 			{
 				//create key
 				var authKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
 				//create JWT
 				var token = new JwtSecurityToken(
-					issuer: _configuration["JWT:ValidIssuer"],
-					audience: _configuration["JWT:ValidAudience"],
-					claims: authClaims,
-					expires: DateTime.Now.AddHours(2),
-					signingCredentials: new SigningCredentials(authKey, SecurityAlgorithms.HmacSha512Signature)
+					issuer: _configuration["JWT:ValidIssuer"] ,
+					audience: _configuration["JWT:ValidAudience"] ,
+					claims: authClaims ,
+					expires: DateTime.Now.AddHours(2) ,
+					signingCredentials: new SigningCredentials(authKey , SecurityAlgorithms.HmacSha512Signature)
 				);
 
 				//string JWT
@@ -177,6 +177,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			}
 			return "";
 		}
+
 		public async Task<ResponseObject<BaseUserModelResponse>> ConfirmEmailAsync(ConfirmMailModel model)
 		{
 			var result = new ResponseObject<BaseUserModelResponse>();
@@ -220,8 +221,8 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			var userExists = await _userManager.FindByEmailAsync(model.Email);
 			if (userExists != null)
 			{
-				result.StatusCode = 404;
-				result.Message = "Email not exist!";
+				result.StatusCode = 403;
+				result.Message = "Email have exist!";
 				return result;
 			}
 			//create user
@@ -249,8 +250,8 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			}
 			else
 			{
-				result.StatusCode = 400;
-				result.Message = "Failed to register";
+				result.StatusCode = 500;
+				result.Message = "Failed to create user!";
 				return result;
 			}
 		}
@@ -273,7 +274,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				var userExist = await _userManager.FindByIdAsync(model.Id);
 				if (userExist == null)
 				{
-					result.StatusCode = 400;
+					result.StatusCode = 404;
 					result.Message = "User not found!";
 					return result;
 				}
@@ -281,7 +282,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				//check confirmPassword
 				if (!string.Equals(model.NewPassword, model.ConfirmPassword))
 				{
-					result.StatusCode = 400;
+					result.StatusCode = 403;
 					result.Message = "NewPassword and confirm password does not match!";
 					return result;
 				}
@@ -301,7 +302,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				}
 			}
 			result.StatusCode = 400;
-			result.Message = "UserName is required!";
+			result.Message = "Id is require!";
 			return result;
 		}
 		public async Task<ResponseObject<BaseUserModelResponse>> ResetPasswordEmailAsync(ResetPasswordByEmailModelRequest model)

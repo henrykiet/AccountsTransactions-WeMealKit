@@ -10,12 +10,12 @@ using System.Threading.Tasks;
 
 namespace AccountsTransactions_BusinessObjects.Mappers
 {
-	public class OrderProfile : Profile
-	{
-        public OrderProfile()
-        {
-            CreateMap<Order, OrderModelResponse>().ReverseMap();
-            CreateMap<Order, CreateOrderModelRequest>().ReverseMap(); ;
-		}
+  public class OrderProfile : Profile
+  {
+    public OrderProfile()
+    {
+      CreateMap<Order, OrderModelResponse>().ReverseMap();
+      CreateMap<Order, CreateOrderModelRequest>().ReverseMap(); ;
     }
+  }
 }

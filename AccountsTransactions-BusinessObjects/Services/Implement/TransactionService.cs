@@ -192,7 +192,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		public async Task CheckAndUpdateOrderStatus(Guid orderId)
 		{
 			var order = await _unitOfWork.OrderRepository.GetAsync(orderId.ToString());
-			if ( order != null && order.Status == OrderStatus.Shipping && order.ShipDate == DateTime.Now )
+			if ( order != null && order.Status != OrderStatus.Delivered && order.Status != OrderStatus.Canceled && order.ShipDate == DateTime.Now )
 			{
 				//chang order status
 				order.Status = OrderStatus.UnShipped;

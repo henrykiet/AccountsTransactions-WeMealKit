@@ -110,7 +110,6 @@ builder.Services.AddScoped<ISendMailService, SendMailService>();
 builder.Services.Configure<MomoOptionModel>(builder.Configuration.GetSection("MomoAPI"));
 
 
-//hangfire
 // Hangfire
 var connectionString = builder.Configuration.GetConnectionString("DBConnect");
 var sqlServerStorageOptions = new SqlServerStorageOptions

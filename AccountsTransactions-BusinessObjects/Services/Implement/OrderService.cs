@@ -8,6 +8,7 @@ using AccountsTransactions_DataAccess.Models;
 using AccountsTransactions_DataAccess.Repository.Interface;
 using AutoMapper;
 using FluentValidation;
+using Hangfire;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,9 +29,9 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		private readonly ChangeOderStatusModelValidator _changeStatusOrderValidator;
 		private readonly ChangeOderStatusDeliveredModelValidator _changeStatusOrderDeliveredValidator;
 		#endregion
-		public OrderService(IUnitOfWork unitOfWork, IMapper mapper)
-        {
-            _unitOfWork = unitOfWork;
+		public OrderService(IUnitOfWork unitOfWork , IMapper mapper)
+		{
+			_unitOfWork = unitOfWork;
 			_mapper = mapper;
 
 			_createOrderValidator = new CreateOrderModelValidator();
@@ -38,12 +39,13 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			_deleteOrderValidator = new DeleteOrderModelValidator();
 			_changeStatusOrderValidator = new ChangeOderStatusModelValidator();
 			_changeStatusOrderDeliveredValidator = new ChangeOderStatusDeliveredModelValidator();
-        }
-        public async Task<ResponseObject<OrderModelResponse>> AllOrders()
+		}
+		#region Get
+		public async Task<ResponseObject<OrderModelResponse>> AllOrders()
 		{
 			var result = new ResponseObject<OrderModelResponse>();
 			var orders = await _unitOfWork.OrderRepository.GetAllAsync();
-			if (orders != null && orders.Count > 0)
+			if ( orders != null && orders.Count > 0 )
 			{
 				result.StatusCode = 200;
 				result.Message = "Order List";
@@ -61,7 +63,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		{
 			var result = new ResponseObject<OrderModelResponse?>();
 			var orderExist = await _unitOfWork.OrderRepository.GetAsync(id);
-			if (orderExist != null)
+			if ( orderExist != null )
 			{
 				result.StatusCode = 200;
 				result.Message = "Order: ";
@@ -75,20 +77,22 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				return result;
 			}
 		}
+		#endregion
+		#region Create Order
 		public async Task<ResponseObject<BaseOrderModelResponse>> CreateOrderAsync(CreateOrderModelRequest model)
 		{
 			var result = new ResponseObject<BaseOrderModelResponse>();
 			var validationResult = _createOrderValidator.Validate(model);
-			if (!validationResult.IsValid)
+			if ( !validationResult.IsValid )
 			{
 				var error = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
 				result.StatusCode = 400;
-				result.Message = string.Join(" - ", error);
+				result.Message = string.Join(" - " , error);
 				return result;
 			}
 			//check userId exists
 			var userExist = await _unitOfWork.UserRepository.GetAsync(model.UserId);
-			if (userExist == null)
+			if ( userExist == null )
 			{
 				result.StatusCode = 404;
 				result.Message = "User not found!";
@@ -100,12 +104,12 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			newOrder.OrderDate = DateTime.Now;
 			newOrder.Status = OrderStatus.Processing;
 			var createResult = await _unitOfWork.OrderRepository.CreateAsync(newOrder);
-			if (createResult)
+			if ( createResult )
 			{
 				userExist.Orders.Add(newOrder);
 				await _unitOfWork.CompleteAsync();
 				result.StatusCode = 200;
-				result.Message = "Created order of user("+ userExist.FirstName + userExist.LastName + ") successfully.";
+				result.Message = "Created order of user(" + userExist.FirstName + userExist.LastName + ") successfully.";
 				return result;
 			}
 			else
@@ -115,39 +119,40 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				return result;
 			}
 		}
+		#endregion
 		public async Task<ResponseObject<BaseOrderModelResponse>> UpdateOrderAsync(UpdateOrderModelRequest model)
 		{
 			var result = new ResponseObject<BaseOrderModelResponse>();
 			var validationResult = _updateOrderValidator.Validate(model);
-			if (!validationResult.IsValid)
+			if ( !validationResult.IsValid )
 			{
 				var error = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
 				result.StatusCode = 400;
-				result.Message = string.Join(" - ", error);
+				result.Message = string.Join(" - " , error);
 				return result;
 			}
 			//check order exists
 			var orderExist = await _unitOfWork.OrderRepository.GetAsync(model.Id.ToString());
-			if (orderExist == null)
+			if ( orderExist == null )
 			{
 				result.StatusCode = 400;
 				result.Message = "Order not found!";
 				return result;
 			}
 
-			if (!string.IsNullOrEmpty(model.Note))
+			if ( !string.IsNullOrEmpty(model.Note) )
 				orderExist.Note = model.Note;
-			if (model.TotalPrice > 0)
+			if ( model.TotalPrice > 0 )
 				orderExist.TotalPrice = (double)(model.TotalPrice * 1000);
-			if (model.ShipDate.HasValue)
+			if ( model.ShipDate.HasValue )
 				orderExist.ShipDate = model.ShipDate.Value;
 
 			var updateResult = await _unitOfWork.OrderRepository.UpdateAsync(orderExist);
-			if (updateResult)
+			if ( updateResult )
 			{
 				await _unitOfWork.CompleteAsync();
 				result.StatusCode = 200;
-				result.Message = "Updated order of user("+ orderExist.User.FirstName + orderExist.User.LastName + ") successfully.";
+				result.Message = "Updated order of user(" + orderExist.User.FirstName + orderExist.User.LastName + ") successfully.";
 				return result;
 			}
 			else
@@ -161,28 +166,28 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		{
 			var result = new ResponseObject<BaseOrderModelResponse>();
 			var validationResult = _deleteOrderValidator.Validate(model);
-			if (!validationResult.IsValid)
+			if ( !validationResult.IsValid )
 			{
 				var error = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
 				result.StatusCode = 400;
-				result.Message = string.Join(" - ", error);
+				result.Message = string.Join(" - " , error);
 				return result;
 			}
 			//check order exists
 			var orderExist = await _unitOfWork.OrderRepository.GetAsync(model.Id.ToString());
-			if (orderExist == null)
+			if ( orderExist == null )
 			{
 				result.StatusCode = 404;
 				result.Message = "Order not found!";
 				return result;
 			}
 			//if user exist in order trust change order status
-			var userExist =await _unitOfWork.UserRepository.GetOrderExistInUserAsync(orderExist.UserId.ToString());
-			if (userExist)
+			var userExist = await _unitOfWork.UserRepository.GetOrderExistInUserAsync(orderExist.UserId.ToString());
+			if ( userExist )
 			{
 				orderExist.Status = OrderStatus.Canceled;
 				var updateResult = await _unitOfWork.OrderRepository.UpdateAsync(orderExist);
-				if (updateResult)
+				if ( updateResult )
 				{
 					await _unitOfWork.CompleteAsync();
 					result.StatusCode = 200;
@@ -197,7 +202,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				}
 			}
 			var deleteResult = await _unitOfWork.OrderRepository.DeleteAsync(orderExist.Id.ToString());
-			if (deleteResult)
+			if ( deleteResult )
 			{
 				await _unitOfWork.CompleteAsync();
 				result.StatusCode = 200;
@@ -211,27 +216,35 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				return result;
 			}
 		}
+		#region Change Status Order
 		public async Task<ResponseObject<BaseOrderModelResponse>> ChangeOrderStatusAsync(ChangeOderStatusModelRequest model)
 		{
 			var result = new ResponseObject<BaseOrderModelResponse>();
 			var validationResult = _changeStatusOrderValidator.Validate(model);
-			if (!validationResult.IsValid)
+			if ( !validationResult.IsValid )
 			{
 				var error = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
 				result.StatusCode = 400;
-				result.Message = string.Join(" - ", error);
+				result.Message = string.Join(" - " , error);
 				return result;
 			}
 			//check order exist
 			var orderExist = await _unitOfWork.OrderRepository.GetAsync(model.Id.ToString());
-			if (orderExist == null)
+			if ( orderExist == null )
 			{
 				result.StatusCode = 404;
 				result.Message = "Order not found!";
 				return result;
 			}
-			var changeResult = await _unitOfWork.OrderRepository.ChangeStatusAsync(orderExist.Id, model.Status);
-			if (changeResult)
+			//check order delivered -> if true can't change order status
+			if(orderExist.Status == OrderStatus.Delivered )
+			{
+				result.StatusCode = 400;
+				result.Message = "Order has been received! Can't change order status";
+				return result;
+			}
+			var changeResult = await _unitOfWork.OrderRepository.ChangeStatusAsync(orderExist.Id , model.Status);
+			if ( changeResult )
 			{
 				await _unitOfWork.CompleteAsync();
 				result.StatusCode = 200;
@@ -245,14 +258,87 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				return result;
 			}
 		}
+		public async Task<ResponseObject<OrderModelResponse>> ChangeOrderStatusDeliveredAsync(ChangeOrderStatusDeliveredByUser model)
+		{
+			var result = new ResponseObject<OrderModelResponse>();
+			var validationResult = _changeStatusOrderDeliveredValidator.Validate(model);
+			if ( !validationResult.IsValid )
+			{
+				var error = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+				result.StatusCode = 400;
+				result.Message = string.Join(" - " , error);
+				return result;
+			}
+			try
+			{
+				var orderExist = await _unitOfWork.OrderRepository.GetAsync(model.Id.ToString());
+				if ( orderExist == null )
+				{
+					result.StatusCode = 404;
+					result.Message = "Order not found!";
+					return result;
+				}
+				//check user to match in order
+				if ( orderExist.UserId != model.UserId )
+				{
+					result.StatusCode = 403;
+					result.Message = "Unauthorized to update order status!";
+					return result;
+				}
+				//check transaction exist
+				var transactionExist = await _unitOfWork.TransactionRepository.GetTransactionIdStringAsync(model.TransactionId);
+				if ( transactionExist != null && transactionExist.Status == TransactionStatus.PAID )
+				{
+					//check if shipped -> change delivered
+					if ( orderExist.Status == OrderStatus.Shipped )
+					{
+						//update order Status
+						orderExist.Status = OrderStatus.Delivered;
+						var updateResult = await _unitOfWork.OrderRepository.UpdateAsync(orderExist);
+						if ( updateResult )
+						{
+							await _unitOfWork.CompleteAsync();
+							result.StatusCode = 200;
+							result.Message = "Order is delivered.";
+							return result;
+						}
+						else
+						{
+							result.StatusCode = 500;
+							result.Message = "Failed to update order status!";
+							return result;
+						}
+					}
+					else
+					{
+						result.StatusCode = 400;
+						result.Message = "Order not shipped! Can't check Delivered";
+						return result;
+					}
+				}
+				else
+				{
+					result.StatusCode = 400;
+					result.Message = "Unpaid orders!";
+					return result;
+				}
+			}
+			catch ( Exception ex )
+			{
+				result.StatusCode = 500;
+				result.Message = "An error occurred while processing the request: " + ex.Message;
+				return result;
+			}
+		}
+		#endregion
 		public async Task<ResponseObject<OrderModelResponse?>> OrderHistory(string userId)
 		{
 			var result = new ResponseObject<OrderModelResponse?>();
 			var userExist = await _unitOfWork.UserRepository.GetAsync(userId);
-			if (userExist != null)
+			if ( userExist != null )
 			{
 				var orderHistory = await _unitOfWork.OrderRepository.GetOrderHistoryAsync(userId);
-				if (orderHistory != null && orderHistory.Any())
+				if ( orderHistory != null && orderHistory.Any() )
 				{
 					result.StatusCode = 200;
 					result.Message = "Order history retrieved successfully";
@@ -271,70 +357,6 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			}
 			return result;
 		}
-		public async Task<ResponseObject<OrderModelResponse>> ChangeOrderStatusDeliveredAsync(ChangeOrderStatusDeliveredByUser model)
-		{
-			var result = new ResponseObject<OrderModelResponse>();
-			var validationResult = _changeStatusOrderDeliveredValidator.Validate(model);
-			if (!validationResult.IsValid)
-			{
-				var error = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-				result.StatusCode = 400;
-				result.Message = string.Join(" - ", error);
-				return result;
-			}
-			try
-			{
-				var orderExist = await _unitOfWork.OrderRepository.GetAsync(model.Id.ToString());
-				if (orderExist == null)
-				{
-					result.StatusCode = 404;
-					result.Message = "Order not found!";
-					return result;
-				}
-				//check user to match in order
-				if (orderExist.UserId != model.UserId)
-				{
-					result.StatusCode = 403;
-					result.Message = "Unauthorized to update order status!";
-					return result;
-				}
-				//check transaction exist
-				var transactionExist = await _unitOfWork.TransactionRepository.GetTransactionIdStringAsync(model.TransactionId);
-				if (transactionExist != null && transactionExist.Status == TransactionStatus.PAID)
-				{
-					//update order Status
-					orderExist.Status = OrderStatus.Delivered;
-					var updateResult = await _unitOfWork.OrderRepository.UpdateAsync(orderExist);
-					if (updateResult)
-					{
-						await _unitOfWork.CompleteAsync();
-						result.StatusCode = 200;
-						result.Message = "Order is delivered.";
-						return result;
-					}
-					else
-					{
-						result.StatusCode = 500;
-						result.Message = "Failed to update order status!";
-						return result;
-					}
-				}
-				else
-				{
-					result.StatusCode = 400;
-					result.Message = "Unpaid orders!";
-					return result;
-				}
-			}
-			catch (Exception ex)
-			{
-				result.StatusCode = 500;
-				result.Message = "An error occurred while processing the request: " + ex.Message;
-				return result;
-			}
-		}
-		
-	
-	
+
 	}
 }

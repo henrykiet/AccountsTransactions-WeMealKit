@@ -12,12 +12,11 @@ namespace AccountsTransactions_BusinessObjects.Mappers
 {
 	public class UserProfile : Profile
 	{
-        public UserProfile()
-        {
-            CreateMap<User, AllUserResponseModel>().ReverseMap();
-            CreateMap<User, UserModelResponse>().ReverseMap();
+		public UserProfile()
+		{
+			CreateMap<User, AllUserResponseModel>().ReverseMap();
+			CreateMap<User, UserModelResponse>().ReverseMap();
 			CreateMap<User, CreateUserModelRequest>().ReverseMap();
-
 		}
 	}
 }

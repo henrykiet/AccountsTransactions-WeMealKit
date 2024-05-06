@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -47,6 +48,7 @@ namespace AccountsTransactions_Test.Services
 			_addRoleValidator = A.Fake<IValidator<AddRoleUserModelRequest>>();
 			_changeRoleValidator = A.Fake<IValidator<ChangeRoleUserModelRequest>>();
 		}
+
 		#region GetByIdAsync
 		[Fact]
 		public async Task UserService_GetUserByIdAsync_ReturnUserFound()
@@ -413,8 +415,6 @@ namespace AccountsTransactions_Test.Services
 				Role = "User"
 			};
 
-			// Fake the validator
-			A.CallTo(() => _createValidator.Validate(model)).Returns(new ValidationResult());
 
 			// Fake the UserManager to return null, indicating that the email doesn't exist
 			User? userNull = null;
@@ -424,10 +424,10 @@ namespace AccountsTransactions_Test.Services
 			A.CallTo(() => _roleManager.RoleExistsAsync(model.Role)).Returns(true);
 
 			// Fake the result of creating a new user
-			var newUser = new User { Email = model.Email };
-			A.CallTo(() => _userManager.AddToRoleAsync(newUser, model.Role)).Returns(IdentityResult.Success);
-			var identityResult = IdentityResult.Success;
-			A.CallTo(() => _userManager.CreateAsync(A<User>.That.Matches(u => u.Email == model.Email))).Returns(identityResult);
+			var newUser = new User();
+			A.CallTo(() => _userManager.AddToRoleAsync(newUser , model.Role)).Returns(IdentityResult.Success);
+			A.CallTo(() => _mapper.Map<User>(model)).Returns(newUser);
+			A.CallTo(() => _userManager.CreateAsync(newUser)).Returns(Task.FromResult(IdentityResult.Success));
 
 			var userService = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
 
@@ -440,18 +440,20 @@ namespace AccountsTransactions_Test.Services
 		}
 
 		[Fact]
-		public async Task UserService_CreateUserAsync_EmailExists_ReturnsBadRequest()
+		public async Task UserService_CreateUserAsync_ReturnEmailExists()
 		{
 			// Arrange
 			var model = new CreateUserModelRequest
 			{
 				Email = "test@example.com" ,
-				Role = "UserRole"
-				// Add other properties as needed
+				FirstName = "John" ,
+				LastName = "Doe" ,
+				Gender = UserGender.Male ,
+				DateOfBirth = new DateTime(1990 , 1 , 1) ,
+				Phone = "123456789" ,
+				Address = "123 Main St" ,
+				Role = "User"
 			};
-
-			// Fake the validator
-			A.CallTo(() => _createValidator.Validate(model)).Returns(new ValidationResult());
 
 			// Fake the UserManager to return a user, indicating that the email exists
 			A.CallTo(() => _userManager.FindByEmailAsync(model.Email)).Returns(new User());
@@ -462,23 +464,25 @@ namespace AccountsTransactions_Test.Services
 			var result = await userService.CreateUserAsync(model);
 
 			// Assert
-			result.StatusCode.Should().Be(400);
+			result.StatusCode.Should().Be(402);
 			result.Message.Should().Be("Email have exist!");
 		}
 
 		[Fact]
-		public async Task UserService_CreateUserAsync_RoleDoesNotExist_ReturnsBadRequest()
+		public async Task UserService_CreateUserAsync_ReturnRoleDoesNotExist()
 		{
 			// Arrange
 			var model = new CreateUserModelRequest
 			{
 				Email = "test@example.com" ,
-				Role = "NonExistentRole"
-				// Add other properties as needed
+				FirstName = "John" ,
+				LastName = "Doe" ,
+				Gender = UserGender.Male ,
+				DateOfBirth = new DateTime(1990 , 1 , 1) ,
+				Phone = "123456789" ,
+				Address = "123 Main St" ,
+				Role = "User"
 			};
-
-			// Fake the validator
-			A.CallTo(() => _createValidator.Validate(model)).Returns(new ValidationResult());
 
 			// Fake the UserManager to return null, indicating that the email doesn't exist
 			User? userNull = null;
@@ -493,7 +497,7 @@ namespace AccountsTransactions_Test.Services
 			var result = await userService.CreateUserAsync(model);
 
 			// Assert
-			result.StatusCode.Should().Be(400);
+			result.StatusCode.Should().Be(404);
 			result.Message.Should().Be("Role doesn't exist!");
 		}
 
@@ -504,12 +508,14 @@ namespace AccountsTransactions_Test.Services
 			var model = new CreateUserModelRequest
 			{
 				Email = "test@example.com" ,
-				Role = "UserRole"
-				// Add other properties as needed
+				FirstName = "John" ,
+				LastName = "Doe" ,
+				Gender = UserGender.Male ,
+				DateOfBirth = new DateTime(1990 , 1 , 1) ,
+				Phone = "123456789" ,
+				Address = "123 Main St" ,
+				Role = "User"
 			};
-
-			// Fake the validator
-			A.CallTo(() => _createValidator.Validate(model)).Returns(new ValidationResult());
 
 			// Fake the UserManager to return null, indicating that the email doesn't exist
 			User? userNull = null;
@@ -519,8 +525,9 @@ namespace AccountsTransactions_Test.Services
 			A.CallTo(() => _roleManager.RoleExistsAsync(model.Role)).Returns(true);
 
 			// Fake the result of creating a new user to indicate failure
-			var identityResult = IdentityResult.Failed(new IdentityError { Description = "Failed to create user" });
-			A.CallTo(() => _userManager.CreateAsync(A<User>._)).Returns(identityResult);
+			var newUser = new User();
+			A.CallTo(() => _mapper.Map<User>(model)).Returns(newUser);
+			A.CallTo(() => _userManager.CreateAsync(newUser)).Returns(IdentityResult.Failed());
 
 			var userService = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
 
@@ -531,7 +538,716 @@ namespace AccountsTransactions_Test.Services
 			result.StatusCode.Should().Be(500);
 			result.Message.Should().Be("Failed to create new User!");
 		}
+		[Fact]
+		public async Task UserService_CreateUserAsync_ReturnFailValidator()
+		{
+			// Arrange
+			var model = new CreateUserModelRequest
+			{
+				Email = "test@example.com" ,
+				FirstName = "" ,
+				LastName = "" ,
+				Gender = UserGender.Male ,
+				DateOfBirth = new DateTime(1990 , 1 , 1) ,
+				Phone = "123456789" ,
+				Address = "123 Main St" ,
+				Role = "User"
+			};
+			var userService = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
 
+			// Act
+			var result = await userService.CreateUserAsync(model);
+
+			// Assert
+			result.StatusCode.Should().Be(400);
+			result.Message.Should().NotBeNullOrEmpty();
+		}
+
+		#endregion
+		#region UpdateUserAsync
+		[Fact]
+		public async Task UserService_UpdateUserAsync_ReturnSuccess()
+		{
+			//Arange
+			var model = new UpdateUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString() ,
+				UserName = "newUsername" ,
+				Email = "newemail@example.com" ,
+				FirstName = "John" ,
+				LastName = "Doe" ,
+				DateOfBirth = new DateTime(1990 , 5 , 15) ,
+				Gender = UserGender.Male ,
+				Phone = "123-456-7890" ,
+				Address = "123 Main Street"
+			};
+
+			var userExist = new User();
+			User? userNull = null;
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _userManager.FindByEmailAsync(model.Email)).Returns(userNull);
+			A.CallTo(() => _userManager.FindByNameAsync(model.UserName)).Returns(userNull);
+			A.CallTo(() => _userManager.UpdateAsync(userExist)).Returns(IdentityResult.Success);
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			//Act
+			var result = await service.UpdateUserAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(200);
+			result.Message.Should().NotBeNullOrEmpty();
+			result.Message.Should().StartWith("Updated user");
+		}
+		[Fact]
+		public async Task UserService_UpdateUserAsync_ReturnErorServer()
+		{
+			//Arange
+			var model = new UpdateUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString() ,
+				UserName = "newUsername" ,
+				Email = "newemail@example.com" ,
+				FirstName = "John" ,
+				LastName = "Doe" ,
+				DateOfBirth = new DateTime(1990 , 5 , 15) ,
+				Gender = UserGender.Male ,
+				Phone = "123-456-7890" ,
+				Address = "123 Main Street"
+			};
+
+			var userExist = new User();
+			User? userNull = null;
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _userManager.FindByEmailAsync(model.Email)).Returns(userNull);
+			A.CallTo(() => _userManager.FindByNameAsync(model.UserName)).Returns(userNull);
+			A.CallTo(() => _userManager.UpdateAsync(userExist)).Returns(IdentityResult.Failed());
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			//Act
+			var result = await service.UpdateUserAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(500);
+			result.Message.Should().NotBeNullOrEmpty();
+			result.Message.Should().Be("Failed to update User!");
+		}
+		[Fact]
+		public async Task UserService_UpdateUserAsync_ReturnFailValidator()
+		{
+			//Arange
+			var model = new UpdateUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString() ,
+				UserName = "newUsername" ,
+				Email = "newemail@gmail.com" ,
+				FirstName = "John" ,
+				LastName = "Doe" ,
+				DateOfBirth = new DateTime(2024 , 5 , 15) ,//error
+				Gender = UserGender.Male ,
+				Phone = "123-456-7890" ,
+				Address = "123 Main Street"
+			};
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+
+			//Act
+			var result = await service.UpdateUserAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(400);
+			result.Message.Should().NotBeNullOrEmpty();
+		}
+		[Fact]
+		public async Task UserService_UpdateUserAsync_ReturnEmailExist()
+		{
+			//Arange
+			var model = new UpdateUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString() ,
+				UserName = "" ,
+				Email = "newemail@example.com" ,
+				FirstName = "John" ,
+				LastName = "Doe" ,
+				DateOfBirth = new DateTime(1990 , 5 , 15) ,
+				Gender = UserGender.Male ,
+				Phone = "123-456-7890" ,
+				Address = "123 Main Street"
+			};
+
+			var userExist = new User();
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _userManager.FindByEmailAsync(model.Email)).Returns(userExist);
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			//Act
+			var result = await service.UpdateUserAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(402);
+			result.Message.Should().NotBeNullOrEmpty();
+			result.Message.Should().Be("Email have exist!");
+		}
+		[Fact]
+		public async Task UserService_UpdateUserAsync_ReturnUsernamelExist()
+		{
+			//Arange
+			var model = new UpdateUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString() ,
+				UserName = "newUsername" ,
+				Email = "" ,
+				FirstName = "John" ,
+				LastName = "Doe" ,
+				DateOfBirth = new DateTime(1990 , 5 , 15) ,
+				Gender = UserGender.Male ,
+				Phone = "123-456-7890" ,
+				Address = "123 Main Street"
+			};
+
+			var userExist = new User();
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _userManager.FindByNameAsync(model.UserName)).Returns(userExist);
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			//Act
+			var result = await service.UpdateUserAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(402);
+			result.Message.Should().NotBeNullOrEmpty();
+			result.Message.Should().Be("Username have exist!");
+		}
+		#endregion
+		#region DeleteUserAsync
+		[Fact]
+		public async Task UserService_DeleteUserAsync_ReturnSuccess()
+		{
+			//Arrange
+			var model = new IdUserModelRequest 
+			{ 
+				Id = Guid.NewGuid().ToString() 
+			};
+			var userExist = new User();
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _unitOfWork.UserRepository.GetOrderExistInUserAsync(userExist.Id)).Returns(true);
+			A.CallTo(() => _userManager.UpdateAsync(userExist)).Returns(IdentityResult.Success);
+
+			//Act
+			var result = await service.DeleteUserAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(200);
+			result.Message.Should().StartWith("User");
+			result.Message.Should().Contain("have order trust change status (UnActive) successfully");
+		}
+		[Fact]
+		public async Task UserService_DeleteUserAsync_ReturnSuccessDelete()
+		{
+			//Arrange
+			var model = new IdUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString()
+			};
+			var userExist = new User();
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _unitOfWork.UserRepository.GetOrderExistInUserAsync(userExist.Id)).Returns(false);
+			A.CallTo(() => _userManager.DeleteAsync(userExist)).Returns(IdentityResult.Success);
+
+			//Act
+			var result = await service.DeleteUserAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(200);
+			result.Message.Should().StartWith("User");
+			result.Message.Should().Contain("deleted successfully.");
+		}
+		[Fact]
+		public async Task UserService_DeleteUserAsync_ReturnErrorServerUpdateStatus()
+		{
+			//Arrange
+			var model = new IdUserModelRequest 
+			{ 
+				Id = Guid.NewGuid().ToString() 
+			};
+			var userExist = new User();
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _unitOfWork.UserRepository.GetOrderExistInUserAsync(userExist.Id)).Returns(true);
+			A.CallTo(() => _userManager.UpdateAsync(userExist)).Returns(IdentityResult.Failed());
+
+			//Act
+			var result = await service.DeleteUserAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(500);
+			result.Message.Should().Be("Failed to Change User status to UnActive!");
+		}
+		[Fact]
+		public async Task UserService_DeleteUserAsync_ReturnErrorServerDelete()
+		{
+			//Arrange
+			var model = new IdUserModelRequest 
+			{ 
+				Id = Guid.NewGuid().ToString() 
+			};
+			var userExist = new User();
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _unitOfWork.UserRepository.GetOrderExistInUserAsync(userExist.Id)).Returns(false);
+			A.CallTo(() => _userManager.DeleteAsync(userExist)).Returns(IdentityResult.Failed());
+
+			//Act
+			var result = await service.DeleteUserAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(500);
+			result.Message.Should().Be("Failed to delete User!");
+		}
+		[Fact]
+		public async Task UserService_DeleteUserAsync_ReturnFailValidator()
+		{
+			//Arrange
+			var model = new IdUserModelRequest 
+			{ 
+				Id = ""
+			};
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+
+			//Act
+			var result = await service.DeleteUserAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(400);
+			result.Message.Should().NotBeNullOrEmpty();
+		}
+
+		#endregion
+		#region ChangeRoleAsync
+		[Fact]
+		public async Task UserSerVice_ChangeRoleAsync_ReturnSuccess()
+		{
+			//Arrange
+			var model = new ChangeRoleUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString() ,
+				NewRole = "NewRole" ,
+				OldRole = "OldRole"
+			};
+
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			var userExist = new User();
+			var listRole = new List<string>
+			{
+				"OldRole"
+			};
+			A.CallTo (() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _userManager.GetRolesAsync(userExist)).Returns(listRole);
+			A.CallTo(() => _userManager.RemoveFromRoleAsync(userExist, model.OldRole)).Returns(IdentityResult.Success);
+			A.CallTo(() => _roleManager.RoleExistsAsync(model.NewRole)).Returns(true);
+			A.CallTo(() => _userManager.AddToRoleAsync(userExist, model.NewRole)).Returns(IdentityResult.Success);
+
+			//Act
+			var result = await service.ChangeRoleAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(200);
+			result.Message.Should().StartWith("Changed role for user");
+		}
+		[Fact]
+		public async Task UserSerVice_ChangeRoleAsync_ReturnRemoveFromRoleFail()
+		{
+			//Arrange
+			var model = new ChangeRoleUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString() ,
+				NewRole = "NewRole" ,
+				OldRole = "OldRole"
+			};
+
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			var userExist = new User();
+			var listRole = new List<string>
+			{
+				"OldRole"
+			};
+			A.CallTo (() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _userManager.GetRolesAsync(userExist)).Returns(listRole);
+			A.CallTo(() => _userManager.RemoveFromRoleAsync(userExist, model.OldRole)).Returns(IdentityResult.Failed());
+
+			//Act
+			var result = await service.ChangeRoleAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(500);
+			result.Message.Should().Be("Failed to remove old roles!");
+		}
+		[Fact]
+		public async Task UserSerVice_ChangeRoleAsync_ReturnNewRoleNotExist()
+		{
+			//Arrange
+			var model = new ChangeRoleUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString() ,
+				NewRole = "NewRole" ,
+				OldRole = "OldRole"
+			};
+
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			var userExist = new User();
+			var listRole = new List<string>
+			{
+				"OldRole"
+			};
+			A.CallTo (() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _userManager.GetRolesAsync(userExist)).Returns(listRole);
+			A.CallTo(() => _userManager.RemoveFromRoleAsync(userExist, model.OldRole)).Returns(IdentityResult.Success);
+			A.CallTo(() => _roleManager.RoleExistsAsync(model.NewRole)).Returns(false);
+
+			//Act
+			var result = await service.ChangeRoleAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(404);
+			result.Message.Should().Be("Role doesn't exist!");
+		}
+		[Fact]
+		public async Task UserSerVice_ChangeRoleAsync_ReturnUserNotFound()
+		{
+			//Arrange
+			var model = new ChangeRoleUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString() ,
+				NewRole = "NewRole" ,
+				OldRole = "OldRole"
+			};
+
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			User? userNull = null;
+			A.CallTo (() => _userManager.FindByIdAsync(model.Id)).Returns(userNull);
+
+			//Act
+			var result = await service.ChangeRoleAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(404);
+			result.Message.Should().Be("User not Exist!");
+		}
+		[Fact]
+		public async Task UserSerVice_ChangeRoleAsync_ReturnFailValidator()
+		{
+			//Arrange
+			var model = new ChangeRoleUserModelRequest
+			{
+				Id = "",
+				NewRole = "NewRole" ,
+				OldRole = "OldRole"
+			};
+
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			User? userNull = null;
+			A.CallTo (() => _userManager.FindByIdAsync(model.Id)).Returns(userNull);
+
+			//Act
+			var result = await service.ChangeRoleAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(400);
+			result.Message.Should().NotBeNullOrEmpty();
+		}
+		#endregion
+		#region AddRoleAsync
+		[Fact]
+		public async Task UserService_AddRoleAsync_ReturnSuccess()
+		{
+			//Arrange
+			var model = new AddRoleUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString() ,
+				Role = "NewRole"
+			};
+			var userExist = new User();
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _roleManager.RoleExistsAsync(model.Role)).Returns(true);
+			A.CallTo(() => _userManager.AddToRoleAsync(userExist, model.Role)).Returns(IdentityResult.Success);
+
+			//Act
+			var result = await service.AddRoleAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(200);
+			result.Message.Should().StartWith("Add role");
+			result.Message.Should().Contain("for user");
+		}
+		[Fact]
+		public async Task UserService_AddRoleAsync_ReturnRoleNotExist()
+		{
+			//Arrange
+			var model = new AddRoleUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString() ,
+				Role = "NewRole"
+			};
+			var userExist = new User();
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _roleManager.RoleExistsAsync(model.Role)).Returns(false);
+
+			//Act
+			var result = await service.AddRoleAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(404);
+			result.Message.Should().Be("Role doesn't exist!");
+		}
+		[Fact]
+		public async Task UserService_AddRoleAsync_ReturnAddRoleFail()
+		{
+			//Arrange
+			var model = new AddRoleUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString() ,
+				Role = "NewRole"
+			};
+			var userExist = new User();
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _roleManager.RoleExistsAsync(model.Role)).Returns(true);
+			A.CallTo(() => _userManager.AddToRoleAsync(userExist, model.Role)).Returns(IdentityResult.Failed());
+
+			//Act
+			var result = await service.AddRoleAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(500);
+			result.Message.Should().Be("Failed to add new role!");
+		}
+		[Fact]
+		public async Task UserService_AddRoleAsync_ReturnUserNotExist()
+		{
+			//Arrange
+			var model = new AddRoleUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString() ,
+				Role = "NewRole"
+			};
+			User? userNull = null;
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userNull);
+
+			//Act
+			var result = await service.AddRoleAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(404);
+			result.Message.Should().Be("User not exist!");
+		}
+		[Fact]
+		public async Task UserService_AddRoleAsync_ReturnFailValidator()
+		{
+			//Arrange
+			var model = new AddRoleUserModelRequest
+			{
+				Id = "" ,
+				Role = ""
+			};
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+
+			//Act
+			var result = await service.AddRoleAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(400);
+			result.Message.Should().NotBeNullOrEmpty();
+		}
+		#endregion
+		#region ChangeStatusAsync
+		[Fact]
+		public async Task UserService_ChangeStatusAsync_ReturnSuccessWithUnActive()
+		{
+			//Arrange
+			var model = new IdUserModelRequest { Id = Guid.NewGuid().ToString() };
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			var userExist = new User();
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _userManager.SetLockoutEndDateAsync(userExist , DateTimeOffset.MaxValue)).Returns(IdentityResult.Success);
+
+			//Act
+			var result = await service.ChangeStatusAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(200);
+			result.Message.Should().NotBeNullOrEmpty();
+			result.Message.Should().StartWith("Changed User");
+			result.Message.Should().Contain("UnActive");
+		}
+		[Fact]
+		public async Task UserService_ChangeStatusAsync_ReturnSuccessWithActive()
+		{
+			//Arrange
+			var model = new IdUserModelRequest { Id = Guid.NewGuid().ToString() };
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			var userExist = new User();
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _userManager.SetLockoutEndDateAsync(userExist , null)).Returns(IdentityResult.Success);
+
+			//Act
+			var result = await service.ChangeStatusAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(200);
+			result.Message.Should().NotBeNullOrEmpty();
+			result.Message.Should().StartWith("Changed User");
+			result.Message.Should().Contain("Active");
+		}
+		[Fact]
+		public async Task UserService_ChangeStatusAsync_ReturnUserNotExist()
+		{
+			//Arrange
+			var model = new IdUserModelRequest { Id = Guid.NewGuid().ToString() };
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			User? userNull = null;
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userNull);
+
+			//Act
+			var result = await service.ChangeStatusAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(404);
+			result.Message.Should().NotBeNullOrEmpty();
+			result.Message.Should().Be("User not found!");
+		}
+		[Fact]
+		public async Task UserService_ChangeStatusAsync_ReturnFailValidator()
+		{
+			//Arrange
+			var model = new IdUserModelRequest { Id = "" };
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+
+			//Act
+			var result = await service.ChangeStatusAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(400);
+			result.Message.Should().NotBeNullOrEmpty();
+			result.Message.Should().Contain("Id is required");
+		}
+		#endregion
+		#region ChangeEmailConfirmAsync
+		[Fact]
+		public async Task UserService_ChangeEmailConfirmAsync_ReturnSuccessConfirm()
+		{
+			//Arrange
+			var model = new IdUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString()
+			};
+			var userExist = new User()
+			{
+				EmailConfirmed = false
+			};
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _userManager.UpdateAsync(userExist)).Returns(IdentityResult.Success);
+
+			//Act
+			var result = await service.ChangeEmailConfirmAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(200);
+			result.Message.Should().NotBeNullOrEmpty();
+			result.Message.Should().StartWith("Changed User");
+			result.Message.Should().Contain("with confirm email successfully.");
+		}
+		[Fact]
+		public async Task UserService_ChangeEmailConfirmAsync_ReturnSuccessNotConfirm()
+		{
+			//Arrange
+			var model = new IdUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString()
+			};
+			var userExist = new User()
+			{
+				EmailConfirmed = true
+			};
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _userManager.UpdateAsync(userExist)).Returns(IdentityResult.Success);
+
+			//Act
+			var result = await service.ChangeEmailConfirmAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(200);
+			result.Message.Should().NotBeNullOrEmpty();
+			result.Message.Should().StartWith("Changed User");
+			result.Message.Should().Contain("with not confirm email successfully.");
+		}
+		[Fact]
+		public async Task UserService_ChangeEmailConfirmAsync_ReturnUnSuccessNotEmailConfirm()
+		{
+			//Arrange
+			var model = new IdUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString()
+			};
+			var userExist = new User()
+			{
+				EmailConfirmed = true
+			};
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _userManager.UpdateAsync(userExist)).Returns(IdentityResult.Failed());
+
+			//Act
+			var result = await service.ChangeEmailConfirmAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(500);
+			result.Message.Should().NotBeNullOrEmpty();
+			result.Message.Should().Be("Update not email confirm user unsuccess!");
+		}
+		[Fact]
+		public async Task UserService_ChangeEmailConfirmAsync_ReturnUnSuccessEmailConfirm()
+		{
+			//Arrange
+			var model = new IdUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString()
+			};
+			var userExist = new User()
+			{
+				EmailConfirmed = false
+			};
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userExist);
+			A.CallTo(() => _userManager.UpdateAsync(userExist)).Returns(IdentityResult.Failed());
+
+			//Act
+			var result = await service.ChangeEmailConfirmAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(500);
+			result.Message.Should().NotBeNullOrEmpty();
+			result.Message.Should().Be("Update email confirm user unsuccess!");
+		}
+		[Fact]
+		public async Task UserService_ChangeEmailConfirmAsync_ReturnUserNotExist()
+		{
+			//Arrange
+			var model = new IdUserModelRequest
+			{
+				Id = Guid.NewGuid().ToString()
+			};
+			User? userNull = null;
+			var service = new UserService(_unitOfWork , _mapper , _userManager , _roleManager);
+			A.CallTo(() => _userManager.FindByIdAsync(model.Id)).Returns(userNull);
+
+			//Act
+			var result = await service.ChangeEmailConfirmAsync(model);
+
+			//Assert
+			result.StatusCode.Should().Be(404);
+			result.Message.Should().Be("User not Exist!");
+		}
 		#endregion
 	}
 }

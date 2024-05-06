@@ -271,7 +271,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			var userExist = await _userManager.FindByIdAsync(model.Id);
 			if ( userExist == null )
 			{
-				result.StatusCode = 400;
+				result.StatusCode = 404;
 				result.Message = "User not found!";
 				return result;
 			}
@@ -281,7 +281,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				var emailExist = await _userManager.FindByEmailAsync(model.Email);
 				if ( emailExist != null )
 				{
-					result.StatusCode = 400;
+					result.StatusCode = 402;
 					result.Message = "Email have exist!";
 					return result;
 				}
@@ -294,7 +294,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				var usernameExist = await _userManager.FindByNameAsync(model.UserName);
 				if ( usernameExist != null )
 				{
-					result.StatusCode = 400;
+					result.StatusCode = 402;
 					result.Message = "Username have exist!";
 					return result;
 				}
@@ -358,7 +358,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				if ( updateResult.Succeeded )
 				{
 					result.StatusCode = 200;
-					result.Message = "user (" + userExist.Email + ")have order trust change status (UnActive) successfully.";
+					result.Message = "User (" + userExist.Email + ")have order trust change status (UnActive) successfully.";
 					return result;
 				}
 				else
@@ -399,9 +399,9 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			}
 			var userExist = await _userManager.FindByIdAsync(model.Id);
 			if ( userExist != null )
-			{
+			{	
+				//check old role if have in list role of user then remove it
 				var oldRoles = await _userManager.GetRolesAsync(userExist);
-
 				if ( oldRoles.Contains(model.OldRole) )
 				{
 					// Remove old roles
@@ -417,7 +417,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				var roleExist = await _roleManager.RoleExistsAsync(model.NewRole);
 				if ( roleExist == false )
 				{
-					result.StatusCode = 400;
+					result.StatusCode = 404;
 					result.Message = "Role doesn't exist!";
 					return result;
 				}
@@ -436,7 +436,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			}
 			else
 			{
-				result.StatusCode = 400;
+				result.StatusCode = 404;
 				result.Message = "User not Exist!";
 				return result;
 			}
@@ -459,7 +459,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				var roleExist = await _roleManager.RoleExistsAsync(model.Role);
 				if ( roleExist == false )
 				{
-					result.StatusCode = 400;
+					result.StatusCode = 404;
 					result.Message = "Role doesn't exist!";
 					return result;
 				}
@@ -476,7 +476,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			}
 			else
 			{
-				result.StatusCode = 400;
+				result.StatusCode = 404;
 				result.Message = "User not exist!";
 				return result;
 			}
@@ -497,7 +497,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			var userExist = await _userManager.FindByIdAsync(model.Id);
 			if ( userExist == null )
 			{
-				result.StatusCode = 400;
+				result.StatusCode = 404;
 				result.Message = "User not found!";
 				return result;
 			}
@@ -533,25 +533,43 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			var userExist = await _userManager.FindByIdAsync(model.Id);
 			if ( userExist == null )
 			{
-				result.StatusCode = 400;
-				result.Message = "User not found!";
+				result.StatusCode = 404;
+				result.Message = "User not Exist!";
 				return result;
 			}
 			if ( userExist.EmailConfirmed == false )
 			{
 				userExist.EmailConfirmed = true;
-				await _userManager.UpdateAsync(userExist);
-				result.StatusCode = 200;
-				result.Message = "Changed User (" + userExist.UserName + ") with confirm email (On) successfully.";
-				return result;
+				var updateResult = await _userManager.UpdateAsync(userExist);
+				if ( updateResult.Succeeded)
+				{
+					result.StatusCode = 200;
+					result.Message = "Changed User (" + userExist.UserName + ") with confirm email successfully.";
+					return result;
+				}
+				else
+				{
+					result.StatusCode = 500;
+					result.Message = "Update email confirm user unsuccess!";
+					return result;
+				}
 			}
 			else
 			{
 				userExist.EmailConfirmed = false;
-				await _userManager.UpdateAsync(userExist);
-				result.StatusCode = 200;
-				result.Message = "Changed User (" + userExist.UserName + ") with confirm email (Off) successfully.";
-				return result;
+				var updateResult = await _userManager.UpdateAsync(userExist);
+				if ( updateResult.Succeeded )
+				{
+					result.StatusCode = 200;
+					result.Message = "Changed User (" + userExist.UserName + ") with not confirm email successfully.";
+					return result;
+				}
+				else
+				{
+					result.StatusCode = 500;
+					result.Message = "Update not email confirm user unsuccess!";
+					return result;
+				}
 			}
 		}
 	}

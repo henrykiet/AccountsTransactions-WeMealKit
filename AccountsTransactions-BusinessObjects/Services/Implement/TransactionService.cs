@@ -32,7 +32,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		{
 			var result = new ResponseObject<MomoCreatePaymentModelRequest>();
 			//check order exist
-			var orderExist = await _unitOfWork.OrderRepository.GetAsync(model.OrderId.ToString());
+			var orderExist = await _unitOfWork.OrderRepository.GetByIdAsync(model.OrderId.ToString());
 			if ( orderExist == null )
 			{
 				result.StatusCode = 404;
@@ -115,7 +115,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			try
 			{
 				//check order exist
-				var orderExist = await _unitOfWork.OrderRepository.GetAsync(model.orderId);
+				var orderExist = await _unitOfWork.OrderRepository.GetByIdAsync(model.orderId);
 				if ( orderExist != null )
 				{
 					//check userExist
@@ -191,7 +191,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		}
 		public async Task CheckAndUpdateOrderStatus(Guid orderId)
 		{
-			var order = await _unitOfWork.OrderRepository.GetAsync(orderId.ToString());
+			var order = await _unitOfWork.OrderRepository.GetByIdAsync(orderId.ToString());
 			if ( order != null && order.Status != OrderStatus.Delivered && order.Status != OrderStatus.Canceled && order.ShipDate == DateTime.Now )
 			{
 				//chang order status

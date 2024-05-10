@@ -15,7 +15,7 @@ namespace AccountsTransactions_Services.Services
         }
 		public override async Task<AllOrderResponse> AllOrder(AllOrderRequest request, ServerCallContext context)
 		{
-			var result = await _orderService.AllOrders();
+			var result = await _orderService.GetAllOrders();
 			var orders = new List<Order>();
 			if (result.List != null)
 			{
@@ -47,7 +47,7 @@ namespace AccountsTransactions_Services.Services
 			Guid orderId;
 			if (Guid.TryParse(request.Id, out orderId))
 			{
-				var result = await _orderService.GetOrderById(request.Id);
+				var result = await _orderService.GetOrderByIdAsync(request.Id);
 				if (result.Data != null)
 				{
 					var o = new Order

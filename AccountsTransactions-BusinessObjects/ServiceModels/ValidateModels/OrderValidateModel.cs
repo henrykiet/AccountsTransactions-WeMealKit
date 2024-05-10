@@ -14,7 +14,7 @@ namespace AccountsTransactions_BusinessObjects.ServiceModels.ValidateModels
 		{
 			RuleFor(x => x.UserId).NotEmpty().WithMessage("UserId is required!");
 			RuleFor(x => x.WeekPlanId).NotEmpty().WithMessage("WeekPlanId is required!");
-			RuleFor(x => x.TotalPrice).NotEmpty().WithMessage("Price is required!");
+			RuleFor(x => x.TotalPrice).NotEmpty().WithMessage("TotalPrice is required!");
 			RuleFor(x => x.ShipDate).NotEmpty().WithMessage("ShipDate is required!")
 				.Must(shipDate => shipDate > DateTime.Now)
 				.WithMessage("ShipDate must be after the current date.");

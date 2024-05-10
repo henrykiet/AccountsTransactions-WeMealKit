@@ -15,7 +15,7 @@ namespace AccountsTransactions_DataAccess.Repository.Implement
         public OrderRepository(AccountsTransactionsContext context) : base(context)
         {
         }
-		public override async Task<Order?> GetAsync(string id)
+		public override async Task<Order?> GetByIdAsync(string id)
 		{
 			try
 			{

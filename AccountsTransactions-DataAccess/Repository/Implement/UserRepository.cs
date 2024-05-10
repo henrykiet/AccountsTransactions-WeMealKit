@@ -18,7 +18,7 @@ namespace AccountsTransactions_DataAccess.Repository.Implement
 		{
 			return base.GetAllAsync();
 		}
-		public override async Task<User?> GetAsync(string id)
+		public override async Task<User?> GetByIdAsync(string id)
 		{
 			return await _dbSet.FirstOrDefaultAsync(u => u.Id == id);
 		}

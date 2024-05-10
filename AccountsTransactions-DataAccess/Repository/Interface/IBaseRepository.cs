@@ -10,7 +10,7 @@ namespace AccountsTransactions_DataAccess.Repository.Interface
 	public interface IBaseRepository<T> where T : class
 	{
 		Task<List<T>> GetAllAsync();
-		Task<T?> GetAsync(string id);
+		Task<T?> GetByIdAsync(string id);
 		public void Create(T entity);
 		Task<bool> CreateAsync(T entity);
 		public void Update(T entity);

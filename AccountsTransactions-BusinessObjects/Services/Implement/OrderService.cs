@@ -41,7 +41,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			_changeStatusOrderDeliveredValidator = new ChangeOderStatusDeliveredModelValidator();
 		}
 		#region Get
-		public async Task<ResponseObject<OrderModelResponse>> AllOrders()
+		public async Task<ResponseObject<OrderModelResponse>> GetAllOrders()
 		{
 			var result = new ResponseObject<OrderModelResponse>();
 			var orders = await _unitOfWork.OrderRepository.GetAllAsync();
@@ -59,14 +59,14 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				return result;
 			}
 		}
-		public async Task<ResponseObject<OrderModelResponse?>> GetOrderById(string id)
+		public async Task<ResponseObject<OrderModelResponse?>> GetOrderByIdAsync(string id)
 		{
 			var result = new ResponseObject<OrderModelResponse?>();
-			var orderExist = await _unitOfWork.OrderRepository.GetAsync(id);
+			var orderExist = await _unitOfWork.OrderRepository.GetByIdAsync(id);
 			if ( orderExist != null )
 			{
 				result.StatusCode = 200;
-				result.Message = "Order: ";
+				result.Message = "Order:";
 				result.Data = _mapper.Map<OrderModelResponse>(orderExist);
 				return result;
 			}
@@ -91,7 +91,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				return result;
 			}
 			//check userId exists
-			var userExist = await _unitOfWork.UserRepository.GetAsync(model.UserId);
+			var userExist = await _unitOfWork.UserRepository.GetByIdAsync(model.UserId);
 			if ( userExist == null )
 			{
 				result.StatusCode = 404;
@@ -132,10 +132,10 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				return result;
 			}
 			//check order exists
-			var orderExist = await _unitOfWork.OrderRepository.GetAsync(model.Id.ToString());
+			var orderExist = await _unitOfWork.OrderRepository.GetByIdAsync(model.Id.ToString());
 			if ( orderExist == null )
 			{
-				result.StatusCode = 400;
+				result.StatusCode = 404;
 				result.Message = "Order not found!";
 				return result;
 			}
@@ -174,7 +174,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				return result;
 			}
 			//check order exists
-			var orderExist = await _unitOfWork.OrderRepository.GetAsync(model.Id.ToString());
+			var orderExist = await _unitOfWork.OrderRepository.GetByIdAsync(model.Id.ToString());
 			if ( orderExist == null )
 			{
 				result.StatusCode = 404;
@@ -229,7 +229,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				return result;
 			}
 			//check order exist
-			var orderExist = await _unitOfWork.OrderRepository.GetAsync(model.Id.ToString());
+			var orderExist = await _unitOfWork.OrderRepository.GetByIdAsync(model.Id.ToString());
 			if ( orderExist == null )
 			{
 				result.StatusCode = 404;
@@ -237,9 +237,9 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				return result;
 			}
 			//check order delivered -> if true can't change order status
-			if(orderExist.Status == OrderStatus.Delivered )
+			if ( orderExist.Status == OrderStatus.Delivered )
 			{
-				result.StatusCode = 400;
+				result.StatusCode = 402;
 				result.Message = "Order has been received! Can't change order status";
 				return result;
 			}
@@ -271,7 +271,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			}
 			try
 			{
-				var orderExist = await _unitOfWork.OrderRepository.GetAsync(model.Id.ToString());
+				var orderExist = await _unitOfWork.OrderRepository.GetByIdAsync(model.Id.ToString());
 				if ( orderExist == null )
 				{
 					result.StatusCode = 404;
@@ -311,7 +311,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 					}
 					else
 					{
-						result.StatusCode = 400;
+						result.StatusCode = 402;
 						result.Message = "Order not shipped! Can't check Delivered";
 						return result;
 					}
@@ -334,7 +334,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		public async Task<ResponseObject<OrderModelResponse?>> OrderHistory(string userId)
 		{
 			var result = new ResponseObject<OrderModelResponse?>();
-			var userExist = await _unitOfWork.UserRepository.GetAsync(userId);
+			var userExist = await _unitOfWork.UserRepository.GetByIdAsync(userId);
 			if ( userExist != null )
 			{
 				var orderHistory = await _unitOfWork.OrderRepository.GetOrderHistoryAsync(userId);
@@ -352,7 +352,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			}
 			else
 			{
-				result.StatusCode = 400;
+				result.StatusCode = 404;
 				result.Message = $"User with id {userId} not found!";
 			}
 			return result;

@@ -55,7 +55,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 		{
 			var result = new ResponseObject<AllUserResponseModel>();
 			var users = await _userManager.Users.ToListAsync();
-			if ( users != null )
+			if ( users != null && users.Count() > 0)
 			{
 				var usersModel = _mapper.Map<List<AllUserResponseModel>>(users);
 				foreach ( var u in usersModel )

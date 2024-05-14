@@ -17,9 +17,9 @@ namespace AccountsTransactions_Services.Services
 		{
 			var result = await _orderService.GetAllOrders();
 			var orders = new List<Order>();
-			if (result.List != null)
+			if (result.Data != null)
 			{
-				foreach (var order in result.List)
+				foreach (var order in result.Data)
 				{
 					var o = new Order
 					{

@@ -41,15 +41,15 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 			_changeStatusOrderDeliveredValidator = new ChangeOderStatusDeliveredModelValidator();
 		}
 		#region Get
-		public async Task<ResponseObject<OrderModelResponse>> GetAllOrders()
+		public async Task<ResponseObject<List<OrderModelResponse>>> GetAllOrders()
 		{
-			var result = new ResponseObject<OrderModelResponse>();
+			var result = new ResponseObject<List<OrderModelResponse>> ();
 			var orders = await _unitOfWork.OrderRepository.GetAllAsync();
 			if ( orders != null && orders.Count > 0 )
 			{
 				result.StatusCode = 200;
 				result.Message = "Order List";
-				result.List = _mapper.Map<List<OrderModelResponse>>(orders);
+				result.Data = _mapper.Map<List<OrderModelResponse>>(orders);
 				return result;
 			}
 			else

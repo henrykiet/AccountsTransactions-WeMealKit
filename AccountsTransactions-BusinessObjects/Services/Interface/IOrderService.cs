@@ -11,7 +11,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Interface
 {
 	public interface IOrderService
 	{
-		Task<ResponseObject<OrderModelResponse>> GetAllOrders();
+		Task<ResponseObject<List<OrderModelResponse>>> GetAllOrders();
 		Task<ResponseObject<OrderModelResponse?>> GetOrderByIdAsync(string id);
 		Task<ResponseObject<BaseOrderModelResponse>> CreateOrderAsync(CreateOrderModelRequest model);
 		Task<ResponseObject<BaseOrderModelResponse>> UpdateOrderAsync(UpdateOrderModelRequest model);

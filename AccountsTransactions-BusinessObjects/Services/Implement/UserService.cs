@@ -431,7 +431,7 @@ namespace AccountsTransactions_BusinessObjects.Services.Implement
 				}
 
 				result.StatusCode = 200;
-				result.Message = "Changed role for user (" + userExist.UserName + ") from (" + string.Join("," , oldRoles) + ") to (" + model.NewRole + ") successfully.";
+				result.Message = "Changed role for user (" + userExist.UserName + ") from (" + string.Join("," , model.OldRole) + ") to (" + model.NewRole + ") successfully.";
 				return result;
 			}
 			else

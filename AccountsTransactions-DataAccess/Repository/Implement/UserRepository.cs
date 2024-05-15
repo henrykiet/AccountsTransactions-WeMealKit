@@ -53,7 +53,7 @@ namespace AccountsTransactions_DataAccess.Repository.Implement
 		public async Task<bool> GetOrderExistInUserAsync(string idUser)
 		{
 			var userExist = await _dbSet.Include(u => u.Orders).FirstOrDefaultAsync(o => o.Id == idUser);
-			if (userExist != null && userExist.Orders != null)
+			if (userExist != null && userExist.Orders.Count < 0)
 			{
 				return true;
 			}

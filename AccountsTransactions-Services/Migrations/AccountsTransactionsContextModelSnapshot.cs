@@ -216,9 +216,9 @@ namespace AccountsTransactions_Services.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "e84ec6ee-c987-471f-afd4-bc9ae4b02806",
+                            Id = "88ccde0d-b20a-4393-8e23-fab87042b8be",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "cb2de378-b5b5-46da-a84d-4ae66689146c",
+                            ConcurrencyStamp = "e7c5eebb-ad09-4172-8352-db5402fc4b4e",
                             Email = "admin@gmail.com",
                             EmailConfirmed = true,
                             FirstName = "admin",
@@ -227,9 +227,9 @@ namespace AccountsTransactions_Services.Migrations
                             LockoutEnabled = true,
                             NormalizedEmail = "ADMIN@GMAIL.COM",
                             NormalizedUserName = "ADMIN@GMAIL.COM",
-                            PasswordHash = "AQAAAAIAAYagAAAAEO8SJyJ7unFnoG3Nbnv9tyvFqB9DbTP+z0d1bb1NjrnBSMdP7Rt/seruWuccpJUxFA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEErDS2S/iMFdmeLMVFOydLgz/K3NEEaflhaMu0ZsNiz8ITR7JsJ/mVAaBxTc20HzyA==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "6cbfa98b-9a55-4803-bf1b-8d5fb3996440",
+                            SecurityStamp = "e4d701a3-4327-4e86-a484-6bf4a51e28e6",
                             TwoFactorEnabled = false,
                             UserName = "admin@gmail.com"
                         });
@@ -265,19 +265,25 @@ namespace AccountsTransactions_Services.Migrations
                         new
                         {
                             Id = "1",
-                            Name = "Admin",
+                            Name = "admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
                             Id = "2",
-                            Name = "Chef",
-                            NormalizedName = "CHEF"
+                            Name = "manager",
+                            NormalizedName = "MANAGER"
                         },
                         new
                         {
                             Id = "3",
-                            Name = "Customer",
+                            Name = "staff",
+                            NormalizedName = "STAFF"
+                        },
+                        new
+                        {
+                            Id = "4",
+                            Name = "customer",
                             NormalizedName = "CUSTOMER"
                         });
                 });
@@ -371,7 +377,7 @@ namespace AccountsTransactions_Services.Migrations
                     b.HasData(
                         new
                         {
-                            UserId = "e84ec6ee-c987-471f-afd4-bc9ae4b02806",
+                            UserId = "88ccde0d-b20a-4393-8e23-fab87042b8be",
                             RoleId = "1"
                         });
                 });
